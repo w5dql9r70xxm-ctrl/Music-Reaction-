@@ -7,7 +7,7 @@ import random
 # ១. ការកំណត់ទំព័រ
 st.set_page_config(page_title="Music Reaction Prompt", page_icon="🎶", layout="centered", initial_sidebar_state="collapsed")
 
-# ២. ការប្រើប្រាស់ Session State សម្រាប់រក្សាទុកទិន្នន័យ
+# ២. ការប្រើប្រាស់ Session State 
 if 'ai_response' not in st.session_state:
     st.session_state.ai_response = ""
 if 'scene1_prompt' not in st.session_state:
@@ -21,19 +21,15 @@ if 'api_keys' not in st.session_state:
 if 'app_lang' not in st.session_state:
     st.session_state.app_lang = "Khmer (ខ្មែរ)"
 
-# ៣. CSS Theme (ដោះស្រាយបញ្ហា Sidebar ឱ្យច្បាស់)
+# ៣. CSS Theme (ដោះស្រាយបញ្ហាប្រអប់ Upload)
 st.markdown("""
 <style>
     /* ផ្ទៃខាងក្រោយទូទៅ */
     .stApp { background-color: #0d1117; }
     
-    /* កែសម្រួល Sidebar ឱ្យមាន Background និងពណ៌អក្សរច្បាស់លាស់ */
-    [data-testid="stSidebar"] {
-        background-color: #161b22 !important;
-    }
-    [data-testid="stSidebar"] * {
-        color: #f0f6fc !important;
-    }
+    /* កែសម្រួល Sidebar */
+    [data-testid="stSidebar"] { background-color: #161b22 !important; }
+    [data-testid="stSidebar"] * { color: #f0f6fc !important; }
     
     /* ពណ៌ចំណងជើងទូទៅ */
     h1, h2, h3, h4, h5, h6 { color: #ffffff !important; }
@@ -52,6 +48,26 @@ st.markdown("""
         background-color: #0d1117 !important; color: #00e5ff !important; border: 1px solid #30363d !important;
     }
     
+    /* --- ដោះស្រាយបញ្ហា File Uploader (ប្រអប់ Upload) --- */
+    [data-testid="stFileUploadDropzone"] {
+        background-color: #161b22 !important; /* ផ្ទៃពណ៌ខ្មៅងងឹត */
+        border: 1px dashed #00e5ff !important; /* បន្ទាត់ជុំវិញពណ៌ខៀវ */
+        border-radius: 8px !important;
+    }
+    [data-testid="stFileUploadDropzone"] * {
+        color: #f0f6fc !important; /* បង្ខំអក្សរខាងក្នុងទាំងអស់ឱ្យចេញពណ៌ស */
+    }
+    /* ប៊ូតុង "Browse files" នៅក្នុង File Uploader */
+    [data-testid="stFileUploadDropzone"] button {
+        background-color: #1f2937 !important;
+        color: #00e5ff !important;
+        border: 1px solid #00e5ff !important;
+    }
+    [data-testid="stFileUploadDropzone"] button:hover {
+        background-color: #00e5ff !important;
+        color: #000000 !important;
+    }
+    
     /* Tabs */
     div[data-baseweb="tab-list"] { gap: 8px; }
     div[data-baseweb="tab"] { background-color: #1f2937; border-radius: 8px; padding: 8px 15px; border: 1px solid #374151; }
@@ -64,7 +80,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ៤. ប្រព័ន្ធបកប្រែ UI ងាយស្រួល (UI Dictionary)
+# ៤. ប្រព័ន្ធបកប្រែ UI
 ui = {
     "Khmer (ខ្មែរ)": {
         "tab1": "🎬 បង្កើត Prompts", "tab2": "⚙️ ការកំណត់តួអង្គ និងរូបភាព",
@@ -88,20 +104,17 @@ ui = {
     }
 }
 
-# ៥. របារចំហៀង (Sidebar) សម្រាប់ការកំណត់ភាសា និង API
+# ៥. របារចំហៀង (Sidebar) 
 with st.sidebar:
     st.markdown("### 🌐 Settings & Languages")
-    # ជ្រើសរើសភាសាកម្មវិធី
     st.session_state.app_lang = st.selectbox("App Interface Language:", ["Khmer (ខ្មែរ)", "English"])
-    t = ui[st.session_state.app_lang] # ទាញយកពាក្យតាមភាសា
+    t = ui[st.session_state.app_lang] 
     
-    # ជ្រើសរើសភាសាវីដេអូ
     st.markdown(f"**{t['lang_video']}**")
     video_lang = st.selectbox("", ["English", "Khmer", "Thai", "Korean", "Spanish", "Other"], label_visibility="collapsed")
     
     st.divider()
     
-    # ភ្ជាប់ API Key
     st.markdown(f"### {t['api_title']}")
     st.caption(t['api_desc'])
     api_input = st.text_area("", height=150, label_visibility="collapsed")
@@ -122,10 +135,10 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ៧. Tabs សម្រាប់ Main Area
+# ៧. Tabs
 tab1, tab2 = st.tabs([t['tab1'], t['tab2']])
 
-# --- TAB 2: ការកំណត់រូបភាព និងតួអង្គ ---
+# --- TAB 2: Visuals ---
 with tab2:
     st.markdown("### 👤 Character & Visuals")
     if st.button(t['cast_btn'], use_container_width=True):
@@ -163,9 +176,10 @@ with tab2:
         "Golden hour sunlight (warm and cinematic)"
     ])
 
-# --- TAB 1: ផ្នែកចម្បងសម្រាប់ Generate Prompts ---
+# --- TAB 1: ផ្នែកចម្បង ---
 with tab1:
     st.caption(t['upload'])
+    # ទីតាំង Upload (File Uploader) ដែលត្រូវបានកែ CSS រួច
     uploaded_file = st.file_uploader("", type=['mp3', 'wav', 'm4a'], label_visibility="collapsed")
 
     if uploaded_file is not None:
@@ -228,7 +242,7 @@ with tab1:
                         if tmp_file_path and os.path.exists(tmp_file_path):
                             os.remove(tmp_file_path)
 
-    # ផ្នែកបង្ហាញ និងទាញយក Prompts 
+    # ផ្នែកបង្ហាញ 
     if st.session_state.scene1_prompt:
         st.divider()
         st.markdown("### English Video Prompts (Ready to Copy)")
