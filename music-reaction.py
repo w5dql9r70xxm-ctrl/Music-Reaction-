@@ -15,9 +15,10 @@ if 'scene2_prompt' not in st.session_state: st.session_state.scene2_prompt = ""
 if 'char_desc' not in st.session_state: st.session_state.char_desc = "A young, stylish Asian person in their 20s, wearing a black oversized hoodie and a silver chain."
 if 'api_keys' not in st.session_state: st.session_state.api_keys = []
 if 'app_lang' not in st.session_state: st.session_state.app_lang = "Khmer (ខ្មែរ)"
-# ថ្មី៖ Session State សម្រាប់រក្សាទុកនាទី
+# កំណត់ Key សម្រាប់ប្រអប់លេខផ្ទាល់
 if 'drop_min' not in st.session_state: st.session_state.drop_min = 0
 if 'drop_sec' not in st.session_state: st.session_state.drop_sec = 30
+if 'success_msg' not in st.session_state: st.session_state.success_msg = ""
 
 # ៣. CSS Theme 
 st.markdown("""
@@ -26,17 +27,11 @@ st.markdown("""
     [data-testid="stSidebar"] { background-color: #161b22 !important; }
     [data-testid="stSidebar"] * { color: #f0f6fc !important; }
     h1, h2, h3, h4, h5, h6 { color: #ffffff !important; }
-    .glowing-box {
-        border: 2px solid #00e5ff; border-radius: 12px; padding: 20px 15px;
-        text-align: center; box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
-        margin-bottom: 20px; background-color: #161b22;
-    }
+    .glowing-box { border: 2px solid #00e5ff; border-radius: 12px; padding: 20px 15px; text-align: center; box-shadow: 0 0 15px rgba(0, 229, 255, 0.4); margin-bottom: 20px; background-color: #161b22; }
     .main-title { color: #ffffff; font-size: 26px; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; }
     .sub-title { color: #d400ff; font-size: 12px; font-weight: 700; letter-spacing: 1px; }
     p, label, span { color: #f0f6fc !important; }
-    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
-        background-color: #0d1117 !important; color: #00e5ff !important; border: 1px solid #30363d !important;
-    }
+    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"], .stNumberInput input { background-color: #0d1117 !important; color: #00e5ff !important; border: 1px solid #30363d !important; }
     [data-testid="stFileUploadDropzone"] { background-color: #161b22 !important; border: 1px dashed #00e5ff !important; border-radius: 8px !important; }
     [data-testid="stFileUploadDropzone"] * { color: #f0f6fc !important; }
     [data-testid="stFileUploadDropzone"] button { background-color: #1f2937 !important; color: #00e5ff !important; border: 1px solid #00e5ff !important; }
@@ -45,8 +40,8 @@ st.markdown("""
     div[data-baseweb="tab"] { background-color: #1f2937; border-radius: 8px; padding: 8px 15px; border: 1px solid #374151; }
     div[data-baseweb="tab"][aria-selected="true"] { background-color: #d400ff; border: none; }
     div[data-baseweb="tab"] p { color: white !important; font-weight: bold; }
-    .stButton>button { background-color: #00e5ff !important; color: #000000 !important; font-weight: bold !important; border-radius: 8px !important; border: none !important; }
-    .stButton>button:hover { background-color: #d400ff !important; color: white !important; }
+    .stButton>button { background-color: #d400ff !important; color: #ffffff !important; font-weight: bold !important; border-radius: 8px !important; border: none !important; }
+    .stButton>button:hover { background-color: #00e5ff !important; color: #000000 !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -133,6 +128,11 @@ with tab1:
         
         st.markdown(t['drop_time'])
         
+        # បង្ហាញសារជូនដំណឹងប្រសិនបើមាន (ក្រោយពី Rerun)
+        if st.session_state.success_msg:
+            st.success(st.session_state.success_msg)
+            st.session_state.success_msg = "" # លុបចោលវិញក្រោយបង្ហាញរួច
+        
         # --- មុខងារ Auto-Detect Drop ---
         if st.button(t['auto_drop'], use_container_width=True):
             if len(st.session_state.api_keys) == 0:
@@ -149,39 +149,38 @@ with tab1:
                         audio_file = genai.upload_file(path=tmp_file_path)
                         model = genai.GenerativeModel('models/gemini-3.5-flash')
                         
-                        prompt = "Listen to this song. Find the exact timestamp of the main, most energetic climax or 'drop'. Respond ONLY with the timestamp in MM:SS format (e.g., 01:15). Do not write any other words."
+                        prompt = "Listen to this song. Find the exact timestamp of the main, most energetic climax or 'drop'. Respond ONLY with the timestamp in MM:SS format (e.g., 00:15). Do not write any other words."
                         response = model.generate_content([prompt, audio_file])
                         
-                        # ចាប់យកអក្សរ MM:SS ពីលទ្ធផល
+                        # ទាញយកនាទីពីចម្លើយរបស់ AI
                         match = re.search(r'(\d+):(\d+)', response.text)
                         if match:
                             st.session_state.drop_min = int(match.group(1))
                             st.session_state.drop_sec = int(match.group(2))
-                            st.success(f"រកឃើញវគ្គ Drop នៅនាទីទី {st.session_state.drop_min}:{st.session_state.drop_sec:02d} 🎉")
-                            st.rerun() # Refresh UI ដើម្បីអាប់ដេតប្រអប់លេខ
+                            st.session_state.success_msg = f"រកឃើញវគ្គ Drop នៅនាទីទី {st.session_state.drop_min}:{st.session_state.drop_sec:02d} 🎉"
+                            st.rerun() # ធ្វើឱ្យប្រអប់លេខ Refresh ភ្លាមៗ
                         else:
-                            st.warning("AI រកមិនឃើញច្បាស់លាស់ទេ សូមកំណត់ដោយដៃ។ / Auto-detect failed, please set manually.")
+                            st.warning(f"AI ឆ្លើយតបខុសទម្រង់ ({response.text}) សូមកំណត់ដោយដៃ។")
                     except Exception as e:
                         st.error(f"Error: {e}")
                     finally:
                         if tmp_file_path and os.path.exists(tmp_file_path): os.remove(tmp_file_path)
 
-        # ប្រអប់វាយលេខនាទី ដែលភ្ជាប់ជាមួយ Session State
+        # ប្រអប់វាយលេខនាទី (ប្រើ Key ផ្ទាល់របស់ Session State)
         c1, c2 = st.columns(2)
-        with c1: drop_min = st.number_input("Min", min_value=0, value=st.session_state.drop_min, step=1, label_visibility="collapsed", key="in_min")
-        with c2: drop_sec = st.number_input("Sec", min_value=0, max_value=59, value=st.session_state.drop_sec, step=1, label_visibility="collapsed", key="in_sec")
+        with c1: drop_min = st.number_input("Min", min_value=0, step=1, label_visibility="collapsed", key="drop_min")
+        with c2: drop_sec = st.number_input("Sec", min_value=0, max_value=59, step=1, label_visibility="collapsed", key="drop_sec")
             
         time_string = f"{drop_min}:{drop_sec:02d}"
         
         st.divider()
+        # ប្តូរពណ៌ប៊ូតុងនេះឱ្យចេញពណ៌ខៀវ (Cyan) ដូចក្នុងរូប
+        st.markdown("""<style> div.stButton > button:last-child { background-color: #00e5ff !important; color: #000000 !important; } div.stButton > button:last-child:hover { background-color: #d400ff !important; color: white !important; } </style>""", unsafe_allow_html=True)
+        
         if st.button(t['gen_btn'], use_container_width=True):
             if len(st.session_state.api_keys) == 0:
                 st.error("⚠️ Please open Sidebar to add API Keys.")
             else:
-                # Update session states with manual input just in case
-                st.session_state.drop_min = drop_min
-                st.session_state.drop_sec = drop_sec
-                
                 with st.spinner("Processing Audio & Generating Prompts... 🎧"):
                     tmp_file_path = None
                     try:
