@@ -118,12 +118,14 @@ with tab2:
     st.text_area(t['char_desc'], key="char_desc", height=100)
     
     location = st.selectbox(t['loc'], ["Bustling city street / sidewalk", "Professional neon-lit podcast studio", "Inside a modern car at night", "Cozy aesthetic bedroom with LED lights"])
+    
+    # បន្ថែមជម្រើស Camera Man ថ្មីនៅទីនេះ (ល្អបំផុតសម្រាប់បញ្ជាឱ្យតួអង្គយើងនិយាយ)
     camera_style = st.selectbox(t['cam'], [
+        "Cameraman following interviewer (Over-the-shoulder Two-Shot)", 
         "POV walking towards subject (First-person approach)",
         "Handheld documentary camera", 
         "Smooth Steadicam tracking shot", 
         "Ultra-wide VLOG angle", 
-        "Low angle hero shot", 
         "Dynamic camera with crash zooms"
     ])
     lighting_style = st.selectbox(t['light'], ["Cinematic moody lighting with deep shadows", "Neon cyberpunk glow (vibrant pinks and blues)", "Golden hour sunlight (warm and cinematic)"])
@@ -136,7 +138,6 @@ with tab1:
     if uploaded_file is not None:
         st.audio(uploaded_file, format='audio/mp3')
         
-        # បន្ថែមប្រអប់បញ្ចូលពាក្យសម្តីសម្រាប់ Veo 3.1
         dialogue_input = st.text_input(t['script_label'], value=t['script_default'])
         
         st.markdown(t['drop_time'])
@@ -145,7 +146,6 @@ with tab1:
             st.success(st.session_state.success_msg)
             st.session_state.success_msg = ""
         
-        # --- Auto-Detect Drop ---
         if st.button(t['auto_drop'], use_container_width=True):
             if len(st.session_state.api_keys) == 0:
                 st.error("⚠️ Please open Sidebar to add API Keys.")
@@ -225,8 +225,12 @@ with tab1:
                         response = model.generate_content([prompt_instruction, audio_file])
                         st.session_state.ai_response = response.text
                         
-                        # បញ្ចូល Dialogue ទៅក្នុង Scene 1 សម្រាប់ Veo 3.1
-                        st.session_state.scene1_prompt = f"{camera_style}, approaching {st.session_state.char_desc}. They stop abruptly, look friendly at the camera, and speak clearly, saying: \"{dialogue_input}\". {location}. {lighting_style}. Photorealistic, continuous dynamic forward motion, high quality, perfect lip-sync audio."
+                        # លក្ខខណ្ឌឆ្លាតវៃ៖ បើកាមេរ៉ាជារបៀប Camera Man ដើរតាម តម្រូវឱ្យមានមនុស្ស ២នាក់ក្នុងប្លង់ (Two-Shot)
+                        if "Cameraman" in camera_style or "Two-Shot" in camera_style:
+                            st.session_state.scene1_prompt = f"Fast-paced {camera_style}. The camera acts as a cameraman following an interviewer from behind. The interviewer quickly steps into the frame, approaching {st.session_state.char_desc}. The interviewer (seen in profile) speaks clearly to them without hesitation, saying: \"{dialogue_input}\". {location}. {lighting_style}. Photorealistic, urgent dynamic forward motion, highly engaging hook, perfect lip-sync audio."
+                        else:
+                            st.session_state.scene1_prompt = f"Fast-paced {camera_style}, quickly approaching {st.session_state.char_desc} who instantly turns to the camera and speaks without hesitation, saying: \"{dialogue_input}\". {location}. {lighting_style}. Photorealistic, urgent dynamic forward motion, highly engaging hook, perfect lip-sync audio."
+                            
                         st.session_state.scene2_prompt = f"Close-up {camera_style} of {st.session_state.char_desc}, putting on large over-ear headphones and closing eyes to tune in. {location}. {lighting_style}. Photorealistic, seamless motion, high quality."
                         
                         st.success("ជោគជ័យ! / Success! 🎉")
@@ -240,7 +244,7 @@ with tab1:
     if st.session_state.scene1_prompt:
         st.divider()
         st.markdown("### English Video Prompts (Ready to Copy)")
-        s1 = st.text_area("🎬 Scene 1", value=st.session_state.scene1_prompt, height=120)
+        s1 = st.text_area("🎬 Scene 1", value=st.session_state.scene1_prompt, height=130)
         s2 = st.text_area("🎬 Scene 2", value=st.session_state.scene2_prompt, height=100)
         s34 = st.text_area("🔥 Scene 3 & 4", value=st.session_state.ai_response, height=200)
                 
