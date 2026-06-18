@@ -21,10 +21,23 @@ if 'api_keys' not in st.session_state:
 if 'app_lang' not in st.session_state:
     st.session_state.app_lang = "Khmer (ខ្មែរ)"
 
-# ៣. CSS Theme 
+# ៣. CSS Theme (ដោះស្រាយបញ្ហា Sidebar ឱ្យច្បាស់)
 st.markdown("""
 <style>
+    /* ផ្ទៃខាងក្រោយទូទៅ */
     .stApp { background-color: #0d1117; }
+    
+    /* កែសម្រួល Sidebar ឱ្យមាន Background និងពណ៌អក្សរច្បាស់លាស់ */
+    [data-testid="stSidebar"] {
+        background-color: #161b22 !important;
+    }
+    [data-testid="stSidebar"] * {
+        color: #f0f6fc !important;
+    }
+    
+    /* ពណ៌ចំណងជើងទូទៅ */
+    h1, h2, h3, h4, h5, h6 { color: #ffffff !important; }
+    
     .glowing-box {
         border: 2px solid #00e5ff; border-radius: 12px; padding: 20px 15px;
         text-align: center; box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
@@ -33,13 +46,19 @@ st.markdown("""
     .main-title { color: #ffffff; font-size: 26px; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; }
     .sub-title { color: #d400ff; font-size: 12px; font-weight: 700; letter-spacing: 1px; }
     p, label, span { color: #f0f6fc !important; }
+    
+    /* ប្រអប់វាយអក្សរ និង Selectbox */
     .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
-        background-color: #161b22 !important; color: #00e5ff !important; border: 1px solid #30363d !important;
+        background-color: #0d1117 !important; color: #00e5ff !important; border: 1px solid #30363d !important;
     }
+    
+    /* Tabs */
     div[data-baseweb="tab-list"] { gap: 8px; }
     div[data-baseweb="tab"] { background-color: #1f2937; border-radius: 8px; padding: 8px 15px; border: 1px solid #374151; }
     div[data-baseweb="tab"][aria-selected="true"] { background-color: #d400ff; border: none; }
     div[data-baseweb="tab"] p { color: white !important; font-weight: bold; }
+    
+    /* Buttons */
     .stButton>button { background-color: #00e5ff !important; color: #000000 !important; font-weight: bold !important; border-radius: 8px !important; border: none !important; }
     .stButton>button:hover { background-color: #d400ff !important; color: white !important; }
 </style>
@@ -50,8 +69,8 @@ ui = {
     "Khmer (ខ្មែរ)": {
         "tab1": "🎬 បង្កើត Prompts", "tab2": "⚙️ ការកំណត់តួអង្គ និងរូបភាព",
         "api_title": "🔑 ភ្ជាប់ API Keys", "api_desc": "បញ្ចូល API Keys ច្រើន (១ ជួរ ១ Key)",
-        "lang_app": "🌐 ភាសាកម្មវិធី (App Interface Language):",
-        "lang_video": "🗣️ ភាសាក្នុងវីដេអូ/ចម្រៀង (Video Audio Language):",
+        "lang_app": "🌐 ភាសាកម្មវិធី:",
+        "lang_video": "🗣️ ភាសាក្នុងវីដេអូ/ចម្រៀង:",
         "cast_btn": "🎲 Auto Cast (ស្វែងរកតួអង្គថ្មី)", "char_desc": "ពណ៌នាតួអង្គ (Character Description):",
         "loc": "ទីតាំង (Location):", "cam": "ម៉ូតកាមេរ៉ា (Camera Style):", "light": "ពន្លឺ (Lighting):",
         "upload": "Upload អូឌីយ៉ូ / វីដេអូ", "drop_time": "⏱️ កំណត់វគ្គ Drop:",
@@ -60,7 +79,7 @@ ui = {
     "English": {
         "tab1": "🎬 Generate Prompts", "tab2": "⚙️ Character & Visuals",
         "api_title": "🔑 API Keys Setup", "api_desc": "Enter multiple keys (1 per line)",
-        "lang_app": "🌐 App Interface Language:",
+        "lang_app": "🌐 App Language:",
         "lang_video": "🗣️ Video Audio Language:",
         "cast_btn": "🎲 Auto Cast (New Character)", "char_desc": "Character Description:",
         "loc": "Location:", "cam": "Camera Style:", "light": "Lighting:",
@@ -106,7 +125,7 @@ st.markdown("""
 # ៧. Tabs សម្រាប់ Main Area
 tab1, tab2 = st.tabs([t['tab1'], t['tab2']])
 
-# --- TAB 2: ការកំណត់រូបភាព និងតួអង្គ (លែងមានការជ្រើសរើសភាសានៅទីនេះហើយ) ---
+# --- TAB 2: ការកំណត់រូបភាព និងតួអង្គ ---
 with tab2:
     st.markdown("### 👤 Character & Visuals")
     if st.button(t['cast_btn'], use_container_width=True):
@@ -177,7 +196,6 @@ with tab1:
                         audio_file = genai.upload_file(path=tmp_file_path)
                         model = genai.GenerativeModel('models/gemini-3.5-flash')
                         
-                        # បញ្ជាឱ្យ AI ដឹងពីភាសាវីដេអូ ប៉ុន្តែ Output ត្រូវតែ English ដាច់ខាត
                         prompt_instruction = f"""
                         Listen to the audio track. The vocal/spoken language is in {video_lang}.
                         The main climax/'drop' is at {time_string}.
@@ -199,7 +217,6 @@ with tab1:
                         response = model.generate_content([prompt_instruction, audio_file])
                         st.session_state.ai_response = response.text
                         
-                        # Generate Prompts ជាភាសាអង់គ្លេសជានិច្ច
                         st.session_state.scene1_prompt = f"{camera_style} of {st.session_state.char_desc}, stopping abruptly and looking friendly at the camera. {location}. {lighting_style}. Photorealistic, continuous motion, high quality."
                         st.session_state.scene2_prompt = f"Close-up {camera_style} of {st.session_state.char_desc}, putting on large over-ear headphones and closing eyes to tune in. {location}. {lighting_style}. Photorealistic, seamless motion, high quality."
                         
