@@ -2,8 +2,9 @@ import streamlit as st
 import google.generativeai as genai
 import tempfile
 import os
+import random  # បន្ថែម library សម្រាប់ random keys
 
-# ១. ការកំណត់ទំព័រ (ប្រើ "centered" ដើម្បីឱ្យត្រូវនឹងទំហំអេក្រង់ទូរស័ព្ទដៃ)
+# ១. ការកំណត់ទំព័រ
 st.set_page_config(page_title="OmniReact AI", page_icon="📱", layout="centered", initial_sidebar_state="collapsed")
 
 # ២. ការប្រើប្រាស់ Session State
@@ -15,8 +16,8 @@ if 'scene2_prompt' not in st.session_state:
     st.session_state.scene2_prompt = ""
 if 'char_desc' not in st.session_state:
     st.session_state.char_desc = "A young, stylish Asian person in their 20s, wearing a black oversized hoodie and a silver chain."
-if 'api_key' not in st.session_state:
-    st.session_state.api_key = ""
+if 'api_keys' not in st.session_state:
+    st.session_state.api_keys = [] # ប្តូរទៅជា List ផ្ទុក API ច្រើន
 
 # ៣. CSS (សម្រួលសម្រាប់ Mobile Device)
 st.markdown("""
@@ -35,7 +36,7 @@ st.markdown("""
     
     .main-title {
         color: white;
-        font-size: 26px; /* បន្ថយទំហំអក្សរសម្រាប់អេក្រង់តូច */
+        font-size: 26px;
         font-weight: 800;
         margin-bottom: 5px;
         font-family: sans-serif;
@@ -62,15 +63,26 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ៤. របារចំហៀង (Sidebar) សម្រាប់ API Key
+# ៤. របារចំហៀង (Sidebar) សម្រាប់ Multiple API Keys
 with st.sidebar:
-    st.markdown("## 🔑 Setup API Key")
-    api_input = st.text_input("បញ្ចូល Gemini API Key:", type="password", value=st.session_state.api_key)
+    st.markdown("## 🔑 Setup API Keys")
+    st.caption("អ្នកអាចបញ្ចូល API Keys បានច្រើន។ សូមដាក់ **១ ជួរ ១ Key (Enter ចុះបន្ទាត់)**។")
+    
+    api_input = st.text_area("បញ្ចូល Gemini API Keys:", height=150, help="Paste keys របស់អ្នកនៅទីនេះ ចុះបន្ទាត់សម្រាប់ Key ថ្មី")
+    
     if api_input:
-        st.session_state.api_key = api_input
-    st.info("ចាំបាច់ត្រូវមាន API Key ដើម្បីវិភាគសំឡេង និង Auto Cast។")
+        # ចាប់យក Key នីមួយៗតាមរយៈការចុះបន្ទាត់ និងលុបចន្លោះទទេចោល
+        keys = [k.strip() for k in api_input.split('\n') if k.strip()]
+        st.session_state.api_keys = keys
+        
+    # បង្ហាញចំនួន Key ដែលបានរក្សាទុក
+    if len(st.session_state.api_keys) > 0:
+        st.success(f"✅ បានភ្ជាប់ API ចំនួន: {len(st.session_state.api_keys)} Keys")
+    else:
+        st.warning("⚠️ មិនទាន់មាន API Key ទេ")
+        
     st.divider()
-    st.caption("📱 OmniReact AI - Mobile Version")
+    st.caption("📱 OmniReact AI - Multi-Key Version")
 
 # ៥. Header UI
 st.markdown("""
@@ -80,26 +92,29 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ៦. Tabs សម្រាប់ទូរស័ព្ទ (ដក Tab ទី៣ចេញ)
+# ៦. Tabs សម្រាប់ទូរស័ព្ទ
 tab1, tab2 = st.tabs(["🎬 Generate", "👤 Visuals"])
 
 # --- TAB 2: ការកំណត់រូបភាព និងតួអង្គ ---
 with tab2:
     st.markdown("### 👤 Character (តួអង្គ)")
     if st.button("🎲 Auto Cast (ស្វែងរកតួអង្គថ្មី)", use_container_width=True):
-        if st.session_state.api_key:
+        if len(st.session_state.api_keys) > 0:
             with st.spinner("Casting..."):
                 try:
-                    genai.configure(api_key=st.session_state.api_key)
+                    # ចាប់យក Random Key មួយមកប្រើ
+                    selected_key = random.choice(st.session_state.api_keys)
+                    genai.configure(api_key=selected_key)
+                    
                     cast_model = genai.GenerativeModel('models/gemini-3.5-flash')
                     cast_prompt = "Generate a highly detailed, 1-sentence description of a unique, trendy, and stylish person for a cinematic AI video prompt. Specify their age, ethnicity, cinematic streetwear/fashion, and one distinct facial feature or accessory. English only."
                     cast_response = cast_model.generate_content(cast_prompt)
                     st.session_state.char_desc = cast_response.text.strip()
                     st.rerun()
                 except Exception as e:
-                    st.error(f"បញ្ហា: {e}")
+                    st.error(f"បញ្ហាជាមួយ Key ដែលបាន Random: {e}")
         else:
-            st.warning("⚠️ សូមបញ្ចូល API Key ក្នុង Sidebar សិន!")
+            st.error("⚠️ សូមបញ្ចូល API Keys ក្នុង Sidebar សិន!")
             
     st.text_area("Character Description:", key="char_desc", height=100)
     st.divider()
@@ -145,13 +160,16 @@ with tab1:
         time_string = f"{drop_min}:{drop_sec:02d}"
         
         if st.button("✨ វិភាគ & បង្កើត Prompts", use_container_width=True):
-            if not st.session_state.api_key:
-                st.error("⚠️ សូមបើក Sidebar (សញ្ញា > ខាងឆ្វេងលើ) ដើម្បីបញ្ចូល API Key សិន។")
+            if len(st.session_state.api_keys) == 0:
+                st.error("⚠️ សូមបើក Sidebar (សញ្ញា > ខាងឆ្វេងលើ) ដើម្បីបញ្ចូល API Keys សិន។")
             else:
                 with st.spinner("កំពុងវិភាគ... 🎧"):
                     tmp_file_path = None
                     try:
-                        genai.configure(api_key=st.session_state.api_key)
+                        # ចាប់យក Random Key មួយមកប្រើសម្រាប់ការវិភាគ
+                        selected_key = random.choice(st.session_state.api_keys)
+                        genai.configure(api_key=selected_key)
+                        
                         with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp_file:
                             tmp_file.write(uploaded_file.getvalue())
                             tmp_file_path = tmp_file.name
@@ -185,12 +203,12 @@ with tab1:
                         st.success("ជោគជ័យ! 🎉")
                         
                     except Exception as e:
-                        st.error(f"បញ្ហា: {e}")
+                        st.error(f"បញ្ហា: {e} (សូមសាកល្បងចុច Generate ម្ដងទៀត ដើម្បី Random យក Key ថ្មី)")
                     finally:
                         if tmp_file_path and os.path.exists(tmp_file_path):
                             os.remove(tmp_file_path)
 
-    # ផ្នែកបង្ហាញ និងទាញយក Prompts (រៀបជាជួរឈរតែមួយសម្រាប់ Mobile)
+    # ផ្នែកបង្ហាញ និងទាញយក Prompts 
     if st.session_state.scene1_prompt or st.session_state.scene2_prompt or st.session_state.ai_response:
         st.divider()
         st.markdown("### Generated Prompts")
