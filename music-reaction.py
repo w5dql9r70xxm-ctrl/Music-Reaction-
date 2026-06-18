@@ -13,7 +13,7 @@ if 'ai_response' not in st.session_state: st.session_state.ai_response = ""
 if 'scene1_prompt' not in st.session_state: st.session_state.scene1_prompt = ""
 if 'scene2_prompt' not in st.session_state: st.session_state.scene2_prompt = ""
 
-# បំបែកតួអង្គជា ២
+# បំបែកតួអង្គជា ២ 
 if 'interviewer_desc' not in st.session_state: 
     st.session_state.interviewer_desc = "A confident 25-year-old content creator wearing a loose vintage graphic tee and a backwards cap, holding a sleek smartphone out like a microphone."
 if 'interviewee_desc' not in st.session_state: 
@@ -128,7 +128,8 @@ with tab2:
                         st.rerun()
                     except Exception as e: st.error(f"Error: {e}")
             else: st.error("⚠️ Add API Keys!")
-        st.text_area("", value=st.session_state.interviewer_desc, key="interviewer_desc", height=120, label_visibility="collapsed")
+        # ប្រើប្រាស់ Key ជា Session State ដើម្បីឱ្យវាលោតអក្សរដោយស្វ័យប្រវត្តិ
+        st.text_area("", key="interviewer_desc", height=120, label_visibility="collapsed")
 
     # អ្នកត្រូវគេសម្ភាសន៍ (Interviewee / Subject)
     with col_sub:
@@ -144,7 +145,8 @@ with tab2:
                         st.rerun()
                     except Exception as e: st.error(f"Error: {e}")
             else: st.error("⚠️ Add API Keys!")
-        st.text_area("", value=st.session_state.interviewee_desc, key="interviewee_desc", height=120, label_visibility="collapsed")
+        # ប្រើប្រាស់ Key ជា Session State ដើម្បីឱ្យវាលោតអក្សរដោយស្វ័យប្រវត្តិ
+        st.text_area("", key="interviewee_desc", height=120, label_visibility="collapsed")
     
     st.divider()
     st.markdown("### 🏙️ Environment & Camera")
@@ -244,7 +246,7 @@ with tab1:
                         
                         Tasks:
                         1. Analyze the audio drop at {time_string}. Determine the required 'Motion Speed'.
-                        2. Write 'Scene 3' Prompt using exact formula: "[Camera] of [Subject], [Sudden physical reaction and Motion Speed matching the audio drop]. [Location]. [Lighting]. Photorealistic, high quality." 
+                        2. Write 'Scene 3' Prompt using exact formula: "[Camera] of [Subject], [Sudden physical reaction and Motion Speed matching the audio drop]. [Location]. [Lighting]. Photorealistic, high quality." Include a short verbal reaction in the prompt (e.g., saying "Whoa!" or "This is crazy!") if it matches the energy.
                         3. Write 'Scene 4' Prompt (Continuous vibe).
                         
                         CRITICAL RULE: The final output MUST be written ENTIRELY in English.
@@ -257,7 +259,7 @@ with tab1:
                         if "Cameraman" in camera_style or "Two-Shot" in camera_style:
                             st.session_state.scene1_prompt = f"Fast-paced {camera_style}. The camera follows behind [{st.session_state.interviewer_desc}]. The interviewer quickly steps into the frame, approaching [{st.session_state.interviewee_desc}]. The interviewer (seen in profile) speaks clearly to them without hesitation, saying: \"{dialogue_input}\". {location}. {lighting_style}. Photorealistic, urgent dynamic forward motion, highly engaging hook, perfect lip-sync audio."
                         else:
-                            st.session_state.scene1_prompt = f"Fast-paced {camera_style}, quickly approaching [{st.session_state.interviewee_desc}]. The unseen interviewer behind the camera speaks clearly without hesitation, saying: \"{dialogue_input}\", causing the subject to instantly turn and look friendly. {location}. {lighting_style}. Photorealistic, urgent dynamic forward motion, highly engaging hook."
+                            st.session_state.scene1_prompt = f"Fast-paced {camera_style}, quickly approaching [{st.session_state.interviewee_desc}]. The unseen interviewer behind the camera speaks clearly without hesitation, saying: \"{dialogue_input}\", causing the subject to instantly turn and look friendly. {location}. {lighting_style}. Photorealistic, urgent dynamic forward motion, highly engaging hook, perfect lip-sync audio."
                             
                         # Scene 2 ផ្តោតទៅលើអ្នកត្រូវគេសម្ភាសន៍ (Interviewee) តែម្នាក់ឯង
                         st.session_state.scene2_prompt = f"Close-up {camera_style} of [{st.session_state.interviewee_desc}], putting on large over-ear headphones and closing eyes to tune in. {location}. {lighting_style}. Photorealistic, seamless motion, high quality."
