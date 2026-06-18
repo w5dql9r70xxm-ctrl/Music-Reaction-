@@ -54,7 +54,9 @@ ui = {
         "loc": "ទីតាំង (Location):", "cam": "ម៉ូតកាមេរ៉ា (Camera Style):", "light": "ពន្លឺ (Lighting):",
         "upload": "Upload អូឌីយ៉ូ / វីដេអូ", "drop_time": "⏱️ កំណត់វគ្គ Drop ដោយដៃ ឬស្វ័យប្រវត្តិ:",
         "gen_btn": "✨ វិភាគ & បង្កើត Prompts", "download": "📥 ទាញយក Prompts (.txt)",
-        "auto_drop": "🪄 ស្វែងរកវគ្គ Hype (Auto-Detect)"
+        "auto_drop": "🪄 ស្វែងរកវគ្គ Hype (Auto-Detect)",
+        "script_label": "💬 ពាក្យនិយាយ (Dialogue for Veo 3.1):",
+        "script_default": "Hey, excuse me! Can I play a song for you to get your honest reaction?"
     },
     "English": {
         "tab1": "🎬 Generate Prompts", "tab2": "⚙️ Character & Visuals",
@@ -64,7 +66,9 @@ ui = {
         "loc": "Location:", "cam": "Camera Style:", "light": "Lighting:",
         "upload": "Upload Audio / Video", "drop_time": "⏱️ Set Drop Timestamp:",
         "gen_btn": "✨ Analyze & Generate Prompts", "download": "📥 Download Prompts (.txt)",
-        "auto_drop": "🪄 Auto-Detect Drop"
+        "auto_drop": "🪄 Auto-Detect Drop",
+        "script_label": "💬 Dialogue (For Veo 3.1 Lip-Sync):",
+        "script_default": "Hey, excuse me! Can I play a song for you to get your honest reaction?"
     }
 }
 
@@ -90,7 +94,7 @@ with st.sidebar:
 st.markdown("""
 <div class="glowing-box">
     <div class="main-title">🎶 Music Reaction Prompt</div>
-    <div class="sub-title">VIDEO PROMPT & AUDIO SYNC WORKSTATION</div>
+    <div class="sub-title">VEO 3.1 LIP-SYNC & AUDIO WORKSTATION</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -114,8 +118,6 @@ with tab2:
     st.text_area(t['char_desc'], key="char_desc", height=100)
     
     location = st.selectbox(t['loc'], ["Bustling city street / sidewalk", "Professional neon-lit podcast studio", "Inside a modern car at night", "Cozy aesthetic bedroom with LED lights"])
-    
-    # ទីតាំងបន្ថែមម៉ូតកាមេរ៉ា POV ដើរចូល
     camera_style = st.selectbox(t['cam'], [
         "POV walking towards subject (First-person approach)",
         "Handheld documentary camera", 
@@ -124,7 +126,6 @@ with tab2:
         "Low angle hero shot", 
         "Dynamic camera with crash zooms"
     ])
-    
     lighting_style = st.selectbox(t['light'], ["Cinematic moody lighting with deep shadows", "Neon cyberpunk glow (vibrant pinks and blues)", "Golden hour sunlight (warm and cinematic)"])
 
 # --- TAB 1: ផ្នែកចម្បង ---
@@ -134,6 +135,9 @@ with tab1:
 
     if uploaded_file is not None:
         st.audio(uploaded_file, format='audio/mp3')
+        
+        # បន្ថែមប្រអប់បញ្ចូលពាក្យសម្តីសម្រាប់ Veo 3.1
+        dialogue_input = st.text_input(t['script_label'], value=t['script_default'])
         
         st.markdown(t['drop_time'])
         
@@ -195,4 +199,56 @@ with tab1:
                         genai.configure(api_key=random.choice(st.session_state.api_keys))
                         with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp_file:
                             tmp_file.write(uploaded_file.getvalue())
-                            tmp_
+                            tmp_file_path = tmp_file.name
+
+                        audio_file = genai.upload_file(path=tmp_file_path)
+                        model = genai.GenerativeModel('models/gemini-3.5-flash')
+                        
+                        prompt_instruction = f"""
+                        Listen to the audio track. The vocal/spoken language is in {video_lang}.
+                        The main climax/'drop' is at {time_string}.
+                        
+                        Context:
+                        - Subject: {st.session_state.char_desc}
+                        - Location: {location}
+                        - Camera: {camera_style}
+                        - Lighting: {lighting_style}
+                        
+                        Tasks:
+                        1. Analyze the audio drop at {time_string}. Determine the required 'Motion Speed'.
+                        2. Write 'Scene 3' Prompt using exact formula: "[Camera] of [Subject], [Sudden physical reaction and Motion Speed matching the audio drop]. [Location]. [Lighting]. Photorealistic, high quality." Include a short verbal reaction in the prompt (e.g., saying "Whoa!" or "This is crazy!") if it matches the energy.
+                        3. Write 'Scene 4' Prompt (Continuous vibe).
+                        
+                        CRITICAL RULE: The final output MUST be written ENTIRELY in English to be used in an AI Video Generator capable of native audio and lip-syncing.
+                        """
+                        
+                        response = model.generate_content([prompt_instruction, audio_file])
+                        st.session_state.ai_response = response.text
+                        
+                        # បញ្ចូល Dialogue ទៅក្នុង Scene 1 សម្រាប់ Veo 3.1
+                        st.session_state.scene1_prompt = f"{camera_style}, approaching {st.session_state.char_desc}. They stop abruptly, look friendly at the camera, and speak clearly, saying: \"{dialogue_input}\". {location}. {lighting_style}. Photorealistic, continuous dynamic forward motion, high quality, perfect lip-sync audio."
+                        st.session_state.scene2_prompt = f"Close-up {camera_style} of {st.session_state.char_desc}, putting on large over-ear headphones and closing eyes to tune in. {location}. {lighting_style}. Photorealistic, seamless motion, high quality."
+                        
+                        st.success("ជោគជ័យ! / Success! 🎉")
+                        
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+                    finally:
+                        if tmp_file_path and os.path.exists(tmp_file_path): os.remove(tmp_file_path)
+
+    # ផ្នែកបង្ហាញ 
+    if st.session_state.scene1_prompt:
+        st.divider()
+        st.markdown("### English Video Prompts (Ready to Copy)")
+        s1 = st.text_area("🎬 Scene 1", value=st.session_state.scene1_prompt, height=120)
+        s2 = st.text_area("🎬 Scene 2", value=st.session_state.scene2_prompt, height=100)
+        s34 = st.text_area("🔥 Scene 3 & 4", value=st.session_state.ai_response, height=200)
+                
+        full_export_text = f"--- VEO 3.1 AUDIO-SYNC PROMPTS ---\nTimestamp Drop: {time_string}\n\n[Scene 1]\n{s1}\n\n[Scene 2]\n{s2}\n\n[Scene 3 & 4]\n{s34}\n"
+        st.download_button(
+            label=t['download'],
+            data=full_export_text,
+            file_name="veo3_reaction_prompts.txt",
+            mime="text/plain",
+            use_container_width=True
+        )
