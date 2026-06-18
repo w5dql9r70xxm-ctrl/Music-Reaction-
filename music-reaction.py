@@ -12,7 +12,13 @@ st.set_page_config(page_title="Music Reaction Prompt", page_icon="🎶", layout=
 if 'ai_response' not in st.session_state: st.session_state.ai_response = ""
 if 'scene1_prompt' not in st.session_state: st.session_state.scene1_prompt = ""
 if 'scene2_prompt' not in st.session_state: st.session_state.scene2_prompt = ""
-if 'char_desc' not in st.session_state: st.session_state.char_desc = "A young, stylish Asian person in their 20s, wearing a black oversized hoodie and a silver chain."
+
+# បំបែកតួអង្គជា ២
+if 'interviewer_desc' not in st.session_state: 
+    st.session_state.interviewer_desc = "A confident 25-year-old content creator wearing a loose vintage graphic tee and a backwards cap, holding a sleek smartphone out like a microphone."
+if 'interviewee_desc' not in st.session_state: 
+    st.session_state.interviewee_desc = "A stylish 22-year-old Asian woman with a sharp bob haircut, wearing a neon-green oversized bomber jacket and large metallic over-ear headphones resting around her neck."
+
 if 'api_keys' not in st.session_state: st.session_state.api_keys = []
 if 'app_lang' not in st.session_state: st.session_state.app_lang = "Khmer (ខ្មែរ)"
 if 'drop_min' not in st.session_state: st.session_state.drop_min = 0
@@ -50,7 +56,8 @@ ui = {
         "tab1": "🎬 បង្កើត Prompts", "tab2": "⚙️ ការកំណត់តួអង្គ និងរូបភាព",
         "api_title": "🔑 ភ្ជាប់ API Keys", "api_desc": "បញ្ចូល API Keys ច្រើន (១ ជួរ ១ Key)",
         "lang_app": "🌐 ភាសាកម្មវិធី:", "lang_video": "🗣️ ភាសាក្នុងវីដេអូ/ចម្រៀង:",
-        "cast_btn": "🎲 Auto Cast (ស្វែងរកតួអង្គថ្មី)", "char_desc": "ពណ៌នាតួអង្គ (Character Description):",
+        "cast_int_btn": "🎲 Cast (អ្នកសួរ)", "int_desc": "🎤 អ្នកសម្ភាសន៍ (Interviewer):",
+        "cast_sub_btn": "🎲 Cast (អ្នកឆ្លើយ)", "sub_desc": "🎧 អ្នកត្រូវគេសម្ភាសន៍ (Interviewee):",
         "loc": "ទីតាំង (Location):", "cam": "ម៉ូតកាមេរ៉ា (Camera Style):", "light": "ពន្លឺ (Lighting):",
         "upload": "Upload អូឌីយ៉ូ / វីដេអូ", "drop_time": "⏱️ កំណត់វគ្គ Drop ដោយដៃ ឬស្វ័យប្រវត្តិ:",
         "gen_btn": "✨ វិភាគ & បង្កើត Prompts", "download": "📥 ទាញយក Prompts (.txt)",
@@ -62,7 +69,8 @@ ui = {
         "tab1": "🎬 Generate Prompts", "tab2": "⚙️ Character & Visuals",
         "api_title": "🔑 API Keys Setup", "api_desc": "Enter multiple keys (1 per line)",
         "lang_app": "🌐 App Language:", "lang_video": "🗣️ Video Audio Language:",
-        "cast_btn": "🎲 Auto Cast (New Character)", "char_desc": "Character Description:",
+        "cast_int_btn": "🎲 Cast (Interviewer)", "int_desc": "🎤 Interviewer Desc:",
+        "cast_sub_btn": "🎲 Cast (Interviewee)", "sub_desc": "🎧 Interviewee Desc:",
         "loc": "Location:", "cam": "Camera Style:", "light": "Lighting:",
         "upload": "Upload Audio / Video", "drop_time": "⏱️ Set Drop Timestamp:",
         "gen_btn": "✨ Analyze & Generate Prompts", "download": "📥 Download Prompts (.txt)",
@@ -82,7 +90,6 @@ with st.sidebar:
     video_lang = st.selectbox("", ["English", "Khmer", "Thai", "Korean", "Spanish", "Other"], label_visibility="collapsed")
     
     st.divider()
-    
     st.markdown(f"### {t['api_title']}")
     st.caption(t['api_desc'])
     api_input = st.text_area("", height=150, label_visibility="collapsed")
@@ -101,25 +108,47 @@ st.markdown("""
 # ៧. Tabs
 tab1, tab2 = st.tabs([t['tab1'], t['tab2']])
 
-# --- TAB 2: Visuals ---
+# --- TAB 2: Visuals & Characters (បំបែកជា ២ ជួរឈរ) ---
 with tab2:
-    st.markdown("### 👤 Character & Visuals")
-    if st.button(t['cast_btn'], use_container_width=True):
-        if len(st.session_state.api_keys) > 0:
-            with st.spinner("Casting..."):
-                try:
-                    genai.configure(api_key=random.choice(st.session_state.api_keys))
-                    cast_model = genai.GenerativeModel('models/gemini-3.5-flash')
-                    st.session_state.char_desc = cast_model.generate_content("Generate a highly detailed, 1-sentence description of a unique, trendy, and stylish person for a cinematic AI video prompt. Specify age, ethnicity, streetwear, and one distinct accessory. English only.").text.strip()
-                    st.rerun()
-                except Exception as e: st.error(f"Error: {e}")
-        else: st.error("⚠️ Please add API Keys in Sidebar!")
-            
-    st.text_area(t['char_desc'], key="char_desc", height=100)
+    st.markdown("### 👥 Characters Setup")
     
+    col_int, col_sub = st.columns(2)
+    
+    # អ្នកសម្ភាសន៍ (Interviewer)
+    with col_int:
+        st.markdown(f"**{t['int_desc']}**")
+        if st.button(t['cast_int_btn'], use_container_width=True, key="btn_int"):
+            if len(st.session_state.api_keys) > 0:
+                with st.spinner("Casting..."):
+                    try:
+                        genai.configure(api_key=random.choice(st.session_state.api_keys))
+                        cast_model = genai.GenerativeModel('models/gemini-3.5-flash')
+                        prompt_int = "Generate a highly detailed, 1-sentence description of a confident and approachable content creator acting as an interviewer. Specify their age (20s-30s), casual trendy streetwear, and mention they are holding a smartphone or a small handheld microphone. English only."
+                        st.session_state.interviewer_desc = cast_model.generate_content(prompt_int).text.strip()
+                        st.rerun()
+                    except Exception as e: st.error(f"Error: {e}")
+            else: st.error("⚠️ Add API Keys!")
+        st.text_area("", value=st.session_state.interviewer_desc, key="interviewer_desc", height=120, label_visibility="collapsed")
+
+    # អ្នកត្រូវគេសម្ភាសន៍ (Interviewee / Subject)
+    with col_sub:
+        st.markdown(f"**{t['sub_desc']}**")
+        if st.button(t['cast_sub_btn'], use_container_width=True, key="btn_sub"):
+            if len(st.session_state.api_keys) > 0:
+                with st.spinner("Casting..."):
+                    try:
+                        genai.configure(api_key=random.choice(st.session_state.api_keys))
+                        cast_model = genai.GenerativeModel('models/gemini-3.5-flash')
+                        prompt_sub = "Generate a highly detailed, 1-sentence description of a unique, trendy, and stylish stranger on the street being approached for an interview. Specify their age, ethnicity, cinematic eye-catching streetwear/fashion, and one distinct accessory. English only."
+                        st.session_state.interviewee_desc = cast_model.generate_content(prompt_sub).text.strip()
+                        st.rerun()
+                    except Exception as e: st.error(f"Error: {e}")
+            else: st.error("⚠️ Add API Keys!")
+        st.text_area("", value=st.session_state.interviewee_desc, key="interviewee_desc", height=120, label_visibility="collapsed")
+    
+    st.divider()
+    st.markdown("### 🏙️ Environment & Camera")
     location = st.selectbox(t['loc'], ["Bustling city street / sidewalk", "Professional neon-lit podcast studio", "Inside a modern car at night", "Cozy aesthetic bedroom with LED lights"])
-    
-    # បន្ថែមជម្រើស Camera Man ថ្មីនៅទីនេះ (ល្អបំផុតសម្រាប់បញ្ជាឱ្យតួអង្គយើងនិយាយ)
     camera_style = st.selectbox(t['cam'], [
         "Cameraman following interviewer (Over-the-shoulder Two-Shot)", 
         "POV walking towards subject (First-person approach)",
@@ -139,7 +168,6 @@ with tab1:
         st.audio(uploaded_file, format='audio/mp3')
         
         dialogue_input = st.text_input(t['script_label'], value=t['script_default'])
-        
         st.markdown(t['drop_time'])
         
         if st.session_state.success_msg:
@@ -209,29 +237,30 @@ with tab1:
                         The main climax/'drop' is at {time_string}.
                         
                         Context:
-                        - Subject: {st.session_state.char_desc}
+                        - Subject reacting to the music: {st.session_state.interviewee_desc}
                         - Location: {location}
                         - Camera: {camera_style}
                         - Lighting: {lighting_style}
                         
                         Tasks:
                         1. Analyze the audio drop at {time_string}. Determine the required 'Motion Speed'.
-                        2. Write 'Scene 3' Prompt using exact formula: "[Camera] of [Subject], [Sudden physical reaction and Motion Speed matching the audio drop]. [Location]. [Lighting]. Photorealistic, high quality." Include a short verbal reaction in the prompt (e.g., saying "Whoa!" or "This is crazy!") if it matches the energy.
+                        2. Write 'Scene 3' Prompt using exact formula: "[Camera] of [Subject], [Sudden physical reaction and Motion Speed matching the audio drop]. [Location]. [Lighting]. Photorealistic, high quality." 
                         3. Write 'Scene 4' Prompt (Continuous vibe).
                         
-                        CRITICAL RULE: The final output MUST be written ENTIRELY in English to be used in an AI Video Generator capable of native audio and lip-syncing.
+                        CRITICAL RULE: The final output MUST be written ENTIRELY in English.
                         """
                         
                         response = model.generate_content([prompt_instruction, audio_file])
                         st.session_state.ai_response = response.text
                         
-                        # លក្ខខណ្ឌឆ្លាតវៃ៖ បើកាមេរ៉ាជារបៀប Camera Man ដើរតាម តម្រូវឱ្យមានមនុស្ស ២នាក់ក្នុងប្លង់ (Two-Shot)
+                        # បញ្ចូលតួអង្គទាំង ២ ទៅក្នុង Scene 1 តាមម៉ូតកាមេរ៉ា
                         if "Cameraman" in camera_style or "Two-Shot" in camera_style:
-                            st.session_state.scene1_prompt = f"Fast-paced {camera_style}. The camera acts as a cameraman following an interviewer from behind. The interviewer quickly steps into the frame, approaching {st.session_state.char_desc}. The interviewer (seen in profile) speaks clearly to them without hesitation, saying: \"{dialogue_input}\". {location}. {lighting_style}. Photorealistic, urgent dynamic forward motion, highly engaging hook, perfect lip-sync audio."
+                            st.session_state.scene1_prompt = f"Fast-paced {camera_style}. The camera follows behind [{st.session_state.interviewer_desc}]. The interviewer quickly steps into the frame, approaching [{st.session_state.interviewee_desc}]. The interviewer (seen in profile) speaks clearly to them without hesitation, saying: \"{dialogue_input}\". {location}. {lighting_style}. Photorealistic, urgent dynamic forward motion, highly engaging hook, perfect lip-sync audio."
                         else:
-                            st.session_state.scene1_prompt = f"Fast-paced {camera_style}, quickly approaching {st.session_state.char_desc} who instantly turns to the camera and speaks without hesitation, saying: \"{dialogue_input}\". {location}. {lighting_style}. Photorealistic, urgent dynamic forward motion, highly engaging hook, perfect lip-sync audio."
+                            st.session_state.scene1_prompt = f"Fast-paced {camera_style}, quickly approaching [{st.session_state.interviewee_desc}]. The unseen interviewer behind the camera speaks clearly without hesitation, saying: \"{dialogue_input}\", causing the subject to instantly turn and look friendly. {location}. {lighting_style}. Photorealistic, urgent dynamic forward motion, highly engaging hook."
                             
-                        st.session_state.scene2_prompt = f"Close-up {camera_style} of {st.session_state.char_desc}, putting on large over-ear headphones and closing eyes to tune in. {location}. {lighting_style}. Photorealistic, seamless motion, high quality."
+                        # Scene 2 ផ្តោតទៅលើអ្នកត្រូវគេសម្ភាសន៍ (Interviewee) តែម្នាក់ឯង
+                        st.session_state.scene2_prompt = f"Close-up {camera_style} of [{st.session_state.interviewee_desc}], putting on large over-ear headphones and closing eyes to tune in. {location}. {lighting_style}. Photorealistic, seamless motion, high quality."
                         
                         st.success("ជោគជ័យ! / Success! 🎉")
                         
@@ -244,9 +273,9 @@ with tab1:
     if st.session_state.scene1_prompt:
         st.divider()
         st.markdown("### English Video Prompts (Ready to Copy)")
-        s1 = st.text_area("🎬 Scene 1", value=st.session_state.scene1_prompt, height=130)
-        s2 = st.text_area("🎬 Scene 2", value=st.session_state.scene2_prompt, height=100)
-        s34 = st.text_area("🔥 Scene 3 & 4", value=st.session_state.ai_response, height=200)
+        s1 = st.text_area("🎬 Scene 1 (The Approach & Question)", value=st.session_state.scene1_prompt, height=140)
+        s2 = st.text_area("🎬 Scene 2 (Tuning In)", value=st.session_state.scene2_prompt, height=100)
+        s34 = st.text_area("🔥 Scene 3 & 4 (The Reaction)", value=st.session_state.ai_response, height=200)
                 
         full_export_text = f"--- VEO 3.1 AUDIO-SYNC PROMPTS ---\nTimestamp Drop: {time_string}\n\n[Scene 1]\n{s1}\n\n[Scene 2]\n{s2}\n\n[Scene 3 & 4]\n{s34}\n"
         st.download_button(
