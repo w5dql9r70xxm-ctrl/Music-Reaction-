@@ -21,7 +21,7 @@ if 'api_keys' not in st.session_state:
 if 'app_lang' not in st.session_state:
     st.session_state.app_lang = "Khmer (ខ្មែរ)"
 
-# ៣. CSS Theme (រក្សាភាពច្បាស់ និង Dark Mode)
+# ៣. CSS Theme 
 st.markdown("""
 <style>
     .stApp { background-color: #0d1117; }
@@ -48,7 +48,7 @@ st.markdown("""
 # ៤. ប្រព័ន្ធបកប្រែ UI ងាយស្រួល (UI Dictionary)
 ui = {
     "Khmer (ខ្មែរ)": {
-        "tab1": "🎬 បង្កើត Prompts", "tab2": "⚙️ ការកំណត់ទូទៅ",
+        "tab1": "🎬 បង្កើត Prompts", "tab2": "⚙️ ការកំណត់តួអង្គ និងរូបភាព",
         "api_title": "🔑 ភ្ជាប់ API Keys", "api_desc": "បញ្ចូល API Keys ច្រើន (១ ជួរ ១ Key)",
         "lang_app": "🌐 ភាសាកម្មវិធី (App Interface Language):",
         "lang_video": "🗣️ ភាសាក្នុងវីដេអូ/ចម្រៀង (Video Audio Language):",
@@ -58,7 +58,7 @@ ui = {
         "gen_btn": "✨ វិភាគ & បង្កើត Prompts", "download": "📥 ទាញយក Prompts (.txt)"
     },
     "English": {
-        "tab1": "🎬 Generate Prompts", "tab2": "⚙️ Settings & Visuals",
+        "tab1": "🎬 Generate Prompts", "tab2": "⚙️ Character & Visuals",
         "api_title": "🔑 API Keys Setup", "api_desc": "Enter multiple keys (1 per line)",
         "lang_app": "🌐 App Interface Language:",
         "lang_video": "🗣️ Video Audio Language:",
@@ -69,13 +69,21 @@ ui = {
     }
 }
 
-# ៥. មុខងារជ្រើសរើសភាសាកម្មវិធី (ដាក់នៅ Sidebar ឬខាងលើ)
-st.session_state.app_lang = st.selectbox("", ["Khmer (ខ្មែរ)", "English"], label_visibility="collapsed")
-t = ui[st.session_state.app_lang] # ទាញយកពាក្យតាមភាសា
-
-# ៦. របារចំហៀង (Sidebar) 
+# ៥. របារចំហៀង (Sidebar) សម្រាប់ការកំណត់ភាសា និង API
 with st.sidebar:
-    st.markdown(f"## {t['api_title']}")
+    st.markdown("### 🌐 Settings & Languages")
+    # ជ្រើសរើសភាសាកម្មវិធី
+    st.session_state.app_lang = st.selectbox("App Interface Language:", ["Khmer (ខ្មែរ)", "English"])
+    t = ui[st.session_state.app_lang] # ទាញយកពាក្យតាមភាសា
+    
+    # ជ្រើសរើសភាសាវីដេអូ
+    st.markdown(f"**{t['lang_video']}**")
+    video_lang = st.selectbox("", ["English", "Khmer", "Thai", "Korean", "Spanish", "Other"], label_visibility="collapsed")
+    
+    st.divider()
+    
+    # ភ្ជាប់ API Key
+    st.markdown(f"### {t['api_title']}")
     st.caption(t['api_desc'])
     api_input = st.text_area("", height=150, label_visibility="collapsed")
     
@@ -87,7 +95,7 @@ with st.sidebar:
     else:
         st.warning("⚠️ No API Key")
 
-# ៧. Header UI
+# ៦. Header UI
 st.markdown("""
 <div class="glowing-box">
     <div class="main-title">🎶 Music Reaction Prompt</div>
@@ -95,15 +103,11 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ៨. Tabs
+# ៧. Tabs សម្រាប់ Main Area
 tab1, tab2 = st.tabs([t['tab1'], t['tab2']])
 
-# --- TAB 2: ភាសាវីដេអូ និងការកំណត់រូបភាព ---
+# --- TAB 2: ការកំណត់រូបភាព និងតួអង្គ (លែងមានការជ្រើសរើសភាសានៅទីនេះហើយ) ---
 with tab2:
-    st.markdown(f"### {t['lang_video']}")
-    video_lang = st.selectbox("", ["English", "Khmer", "Thai", "Korean", "Spanish", "Other"], label_visibility="collapsed")
-    st.divider()
-
     st.markdown("### 👤 Character & Visuals")
     if st.button(t['cast_btn'], use_container_width=True):
         if len(st.session_state.api_keys) > 0:
