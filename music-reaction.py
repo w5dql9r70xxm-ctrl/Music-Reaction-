@@ -2,12 +2,12 @@ import streamlit as st
 import google.generativeai as genai
 import tempfile
 import os
-import random  # បន្ថែម library សម្រាប់ random keys
+import random
 
 # ១. ការកំណត់ទំព័រ
-st.set_page_config(page_title="OmniReact AI", page_icon="📱", layout="centered", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Music Reaction Prompt", page_icon="🎶", layout="centered", initial_sidebar_state="collapsed")
 
-# ២. ការប្រើប្រាស់ Session State
+# ២. ការប្រើប្រាស់ Session State សម្រាប់រក្សាទុកទិន្នន័យ
 if 'ai_response' not in st.session_state:
     st.session_state.ai_response = ""
 if 'scene1_prompt' not in st.session_state:
@@ -17,158 +17,154 @@ if 'scene2_prompt' not in st.session_state:
 if 'char_desc' not in st.session_state:
     st.session_state.char_desc = "A young, stylish Asian person in their 20s, wearing a black oversized hoodie and a silver chain."
 if 'api_keys' not in st.session_state:
-    st.session_state.api_keys = [] # ប្តូរទៅជា List ផ្ទុក API ច្រើន
+    st.session_state.api_keys = []
+if 'app_lang' not in st.session_state:
+    st.session_state.app_lang = "Khmer (ខ្មែរ)"
 
-# ៣. CSS (សម្រួលសម្រាប់ Mobile Device)
+# ៣. CSS Theme (រក្សាភាពច្បាស់ និង Dark Mode)
 st.markdown("""
 <style>
-    .stApp { background-color: #0e1117; }
-    
+    .stApp { background-color: #0d1117; }
     .glowing-box {
-        border: 2px solid #d400ff;
-        border-radius: 12px;
-        padding: 20px 15px;
-        text-align: center;
-        box-shadow: 0 0 12px rgba(212, 0, 255, 0.3);
-        margin-bottom: 20px;
-        background-color: #161b22;
+        border: 2px solid #00e5ff; border-radius: 12px; padding: 20px 15px;
+        text-align: center; box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+        margin-bottom: 20px; background-color: #161b22;
     }
-    
-    .main-title {
-        color: white;
-        font-size: 26px;
-        font-weight: 800;
-        margin-bottom: 5px;
-        font-family: sans-serif;
+    .main-title { color: #ffffff; font-size: 26px; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; }
+    .sub-title { color: #d400ff; font-size: 12px; font-weight: 700; letter-spacing: 1px; }
+    p, label, span { color: #f0f6fc !important; }
+    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
+        background-color: #161b22 !important; color: #00e5ff !important; border: 1px solid #30363d !important;
     }
-    
-    .sub-title {
-        color: #00e5ff;
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 1px;
-    }
-
-    div[data-baseweb="tab-list"] { gap: 5px; }
-    div[data-baseweb="tab"] {
-        background-color: #1f2937;
-        border-radius: 8px;
-        padding: 8px 12px;
-        border: none;
-        color: white;
-        font-size: 14px;
-    }
-    div[data-baseweb="tab"]:focus { outline: none; }
-    div[data-testid="stTabs"] [data-baseweb="tab-highlight"] { background-color: transparent; }
+    div[data-baseweb="tab-list"] { gap: 8px; }
+    div[data-baseweb="tab"] { background-color: #1f2937; border-radius: 8px; padding: 8px 15px; border: 1px solid #374151; }
+    div[data-baseweb="tab"][aria-selected="true"] { background-color: #d400ff; border: none; }
+    div[data-baseweb="tab"] p { color: white !important; font-weight: bold; }
+    .stButton>button { background-color: #00e5ff !important; color: #000000 !important; font-weight: bold !important; border-radius: 8px !important; border: none !important; }
+    .stButton>button:hover { background-color: #d400ff !important; color: white !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# ៤. របារចំហៀង (Sidebar) សម្រាប់ Multiple API Keys
+# ៤. ប្រព័ន្ធបកប្រែ UI ងាយស្រួល (UI Dictionary)
+ui = {
+    "Khmer (ខ្មែរ)": {
+        "tab1": "🎬 បង្កើត Prompts", "tab2": "⚙️ ការកំណត់ទូទៅ",
+        "api_title": "🔑 ភ្ជាប់ API Keys", "api_desc": "បញ្ចូល API Keys ច្រើន (១ ជួរ ១ Key)",
+        "lang_app": "🌐 ភាសាកម្មវិធី (App Interface Language):",
+        "lang_video": "🗣️ ភាសាក្នុងវីដេអូ/ចម្រៀង (Video Audio Language):",
+        "cast_btn": "🎲 Auto Cast (ស្វែងរកតួអង្គថ្មី)", "char_desc": "ពណ៌នាតួអង្គ (Character Description):",
+        "loc": "ទីតាំង (Location):", "cam": "ម៉ូតកាមេរ៉ា (Camera Style):", "light": "ពន្លឺ (Lighting):",
+        "upload": "Upload អូឌីយ៉ូ / វីដេអូ", "drop_time": "⏱️ កំណត់វគ្គ Drop:",
+        "gen_btn": "✨ វិភាគ & បង្កើត Prompts", "download": "📥 ទាញយក Prompts (.txt)"
+    },
+    "English": {
+        "tab1": "🎬 Generate Prompts", "tab2": "⚙️ Settings & Visuals",
+        "api_title": "🔑 API Keys Setup", "api_desc": "Enter multiple keys (1 per line)",
+        "lang_app": "🌐 App Interface Language:",
+        "lang_video": "🗣️ Video Audio Language:",
+        "cast_btn": "🎲 Auto Cast (New Character)", "char_desc": "Character Description:",
+        "loc": "Location:", "cam": "Camera Style:", "light": "Lighting:",
+        "upload": "Upload Audio / Video", "drop_time": "⏱️ Set Drop Timestamp:",
+        "gen_btn": "✨ Analyze & Generate Prompts", "download": "📥 Download Prompts (.txt)"
+    }
+}
+
+# ៥. មុខងារជ្រើសរើសភាសាកម្មវិធី (ដាក់នៅ Sidebar ឬខាងលើ)
+st.session_state.app_lang = st.selectbox("", ["Khmer (ខ្មែរ)", "English"], label_visibility="collapsed")
+t = ui[st.session_state.app_lang] # ទាញយកពាក្យតាមភាសា
+
+# ៦. របារចំហៀង (Sidebar) 
 with st.sidebar:
-    st.markdown("## 🔑 Setup API Keys")
-    st.caption("អ្នកអាចបញ្ចូល API Keys បានច្រើន។ សូមដាក់ **១ ជួរ ១ Key (Enter ចុះបន្ទាត់)**។")
-    
-    api_input = st.text_area("បញ្ចូល Gemini API Keys:", height=150, help="Paste keys របស់អ្នកនៅទីនេះ ចុះបន្ទាត់សម្រាប់ Key ថ្មី")
+    st.markdown(f"## {t['api_title']}")
+    st.caption(t['api_desc'])
+    api_input = st.text_area("", height=150, label_visibility="collapsed")
     
     if api_input:
-        # ចាប់យក Key នីមួយៗតាមរយៈការចុះបន្ទាត់ និងលុបចន្លោះទទេចោល
-        keys = [k.strip() for k in api_input.split('\n') if k.strip()]
-        st.session_state.api_keys = keys
+        st.session_state.api_keys = [k.strip() for k in api_input.split('\n') if k.strip()]
         
-    # បង្ហាញចំនួន Key ដែលបានរក្សាទុក
     if len(st.session_state.api_keys) > 0:
-        st.success(f"✅ បានភ្ជាប់ API ចំនួន: {len(st.session_state.api_keys)} Keys")
+        st.success(f"✅ {len(st.session_state.api_keys)} Keys Connected")
     else:
-        st.warning("⚠️ មិនទាន់មាន API Key ទេ")
-        
-    st.divider()
-    st.caption("📱 OmniReact AI - Multi-Key Version")
+        st.warning("⚠️ No API Key")
 
-# ៥. Header UI
+# ៧. Header UI
 st.markdown("""
 <div class="glowing-box">
-    <div class="main-title">⚡ OmniReact AI</div>
-    <div class="sub-title">VIDEO PROMPT & AUDIO SYNC APP</div>
+    <div class="main-title">🎶 Music Reaction Prompt</div>
+    <div class="sub-title">VIDEO PROMPT & AUDIO SYNC WORKSTATION</div>
 </div>
 """, unsafe_allow_html=True)
 
-# ៦. Tabs សម្រាប់ទូរស័ព្ទ
-tab1, tab2 = st.tabs(["🎬 Generate", "👤 Visuals"])
+# ៨. Tabs
+tab1, tab2 = st.tabs([t['tab1'], t['tab2']])
 
-# --- TAB 2: ការកំណត់រូបភាព និងតួអង្គ ---
+# --- TAB 2: ភាសាវីដេអូ និងការកំណត់រូបភាព ---
 with tab2:
-    st.markdown("### 👤 Character (តួអង្គ)")
-    if st.button("🎲 Auto Cast (ស្វែងរកតួអង្គថ្មី)", use_container_width=True):
+    st.markdown(f"### {t['lang_video']}")
+    video_lang = st.selectbox("", ["English", "Khmer", "Thai", "Korean", "Spanish", "Other"], label_visibility="collapsed")
+    st.divider()
+
+    st.markdown("### 👤 Character & Visuals")
+    if st.button(t['cast_btn'], use_container_width=True):
         if len(st.session_state.api_keys) > 0:
             with st.spinner("Casting..."):
                 try:
-                    # ចាប់យក Random Key មួយមកប្រើ
-                    selected_key = random.choice(st.session_state.api_keys)
-                    genai.configure(api_key=selected_key)
-                    
+                    genai.configure(api_key=random.choice(st.session_state.api_keys))
                     cast_model = genai.GenerativeModel('models/gemini-3.5-flash')
                     cast_prompt = "Generate a highly detailed, 1-sentence description of a unique, trendy, and stylish person for a cinematic AI video prompt. Specify their age, ethnicity, cinematic streetwear/fashion, and one distinct facial feature or accessory. English only."
-                    cast_response = cast_model.generate_content(cast_prompt)
-                    st.session_state.char_desc = cast_response.text.strip()
+                    st.session_state.char_desc = cast_model.generate_content(cast_prompt).text.strip()
                     st.rerun()
                 except Exception as e:
-                    st.error(f"បញ្ហាជាមួយ Key ដែលបាន Random: {e}")
+                    st.error(f"Error: {e}")
         else:
-            st.error("⚠️ សូមបញ្ចូល API Keys ក្នុង Sidebar សិន!")
+            st.error("⚠️ Please add API Keys in Sidebar!")
             
-    st.text_area("Character Description:", key="char_desc", height=100)
-    st.divider()
+    st.text_area(t['char_desc'], key="char_desc", height=100)
     
-    st.markdown("### 🏙️ Environment (បរិយាកាស)")
-    location = st.selectbox("ទីតាំង (Location):", [
+    location = st.selectbox(t['loc'], [
         "Bustling city street / sidewalk", 
         "Professional neon-lit podcast studio", 
         "Inside a modern car at night", 
-        "Cozy aesthetic bedroom with LED lights",
-        "Underground subway station"
+        "Cozy aesthetic bedroom with LED lights"
     ])
-    camera_style = st.selectbox("ម៉ូតកាមេរ៉ា (Camera Style):", [
+    camera_style = st.selectbox(t['cam'], [
         "Handheld documentary camera",
         "Smooth Steadicam tracking shot",
         "Ultra-wide VLOG angle",
         "Low angle hero shot",
         "Dynamic camera with crash zooms"
     ])
-    lighting_style = st.selectbox("ពន្លឺ (Lighting):", [
+    lighting_style = st.selectbox(t['light'], [
         "Cinematic moody lighting with deep shadows",
         "Neon cyberpunk glow (vibrant pinks and blues)",
-        "Golden hour sunlight (warm and cinematic)",
-        "High-contrast dramatic studio lighting",
-        "Natural overcast daylight (realistic and raw)"
+        "Golden hour sunlight (warm and cinematic)"
     ])
 
 # --- TAB 1: ផ្នែកចម្បងសម្រាប់ Generate Prompts ---
 with tab1:
-    st.caption("Upload Video / Audio Track")
-    uploaded_file = st.file_uploader("", type=['mp3', 'wav', 'm4a'], help="100MB max")
+    st.caption(t['upload'])
+    uploaded_file = st.file_uploader("", type=['mp3', 'wav', 'm4a'], label_visibility="collapsed")
 
     if uploaded_file is not None:
         st.audio(uploaded_file, format='audio/mp3')
-        st.markdown("⏱️ **កំណត់វគ្គ Drop:**")
+        st.markdown(t['drop_time'])
         
         c1, c2 = st.columns(2)
         with c1:
-            drop_min = st.number_input("នាទី", min_value=0, value=0, step=1)
+            drop_min = st.number_input("Min", min_value=0, value=0, step=1, label_visibility="collapsed")
         with c2:
-            drop_sec = st.number_input("វិនាទី", min_value=0, max_value=59, value=30, step=1)
+            drop_sec = st.number_input("Sec", min_value=0, max_value=59, value=30, step=1, label_visibility="collapsed")
             
         time_string = f"{drop_min}:{drop_sec:02d}"
         
-        if st.button("✨ វិភាគ & បង្កើត Prompts", use_container_width=True):
+        if st.button(t['gen_btn'], use_container_width=True):
             if len(st.session_state.api_keys) == 0:
-                st.error("⚠️ សូមបើក Sidebar (សញ្ញា > ខាងឆ្វេងលើ) ដើម្បីបញ្ចូល API Keys សិន។")
+                st.error("⚠️ Please open Sidebar to add API Keys.")
             else:
-                with st.spinner("កំពុងវិភាគ... 🎧"):
+                with st.spinner("Processing Audio... 🎧"):
                     tmp_file_path = None
                     try:
-                        # ចាប់យក Random Key មួយមកប្រើសម្រាប់ការវិភាគ
-                        selected_key = random.choice(st.session_state.api_keys)
-                        genai.configure(api_key=selected_key)
+                        genai.configure(api_key=random.choice(st.session_state.api_keys))
                         
                         with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp_file:
                             tmp_file.write(uploaded_file.getvalue())
@@ -177,8 +173,10 @@ with tab1:
                         audio_file = genai.upload_file(path=tmp_file_path)
                         model = genai.GenerativeModel('models/gemini-3.5-flash')
                         
+                        # បញ្ជាឱ្យ AI ដឹងពីភាសាវីដេអូ ប៉ុន្តែ Output ត្រូវតែ English ដាច់ខាត
                         prompt_instruction = f"""
-                        Listen to the audio track. The main climax/'drop' is at {time_string}.
+                        Listen to the audio track. The vocal/spoken language is in {video_lang}.
+                        The main climax/'drop' is at {time_string}.
                         
                         Context:
                         - Subject: {st.session_state.char_desc}
@@ -191,36 +189,37 @@ with tab1:
                         2. Write 'Scene 3' Prompt using exact formula: "[Camera] of [Subject], [Sudden physical reaction and Motion Speed matching the audio drop]. [Location]. [Lighting]. Photorealistic, high quality."
                         3. Write 'Scene 4' Prompt (Continuous vibe).
                         
-                        Do not write explanations. Just output the two formatted prompts clearly.
+                        CRITICAL RULE: The final output MUST be written ENTIRELY in English to be used in an AI Video Generator.
                         """
                         
                         response = model.generate_content([prompt_instruction, audio_file])
-                        
                         st.session_state.ai_response = response.text
+                        
+                        # Generate Prompts ជាភាសាអង់គ្លេសជានិច្ច
                         st.session_state.scene1_prompt = f"{camera_style} of {st.session_state.char_desc}, stopping abruptly and looking friendly at the camera. {location}. {lighting_style}. Photorealistic, continuous motion, high quality."
                         st.session_state.scene2_prompt = f"Close-up {camera_style} of {st.session_state.char_desc}, putting on large over-ear headphones and closing eyes to tune in. {location}. {lighting_style}. Photorealistic, seamless motion, high quality."
                         
-                        st.success("ជោគជ័យ! 🎉")
+                        st.success("ជោគជ័យ! / Success! 🎉")
                         
                     except Exception as e:
-                        st.error(f"បញ្ហា: {e} (សូមសាកល្បងចុច Generate ម្ដងទៀត ដើម្បី Random យក Key ថ្មី)")
+                        st.error(f"Error: {e}")
                     finally:
                         if tmp_file_path and os.path.exists(tmp_file_path):
                             os.remove(tmp_file_path)
 
     # ផ្នែកបង្ហាញ និងទាញយក Prompts 
-    if st.session_state.scene1_prompt or st.session_state.scene2_prompt or st.session_state.ai_response:
+    if st.session_state.scene1_prompt:
         st.divider()
-        st.markdown("### Generated Prompts")
-        s1 = st.text_area("🎬 Scene 1 (៥ វិនាទី)", value=st.session_state.scene1_prompt, height=100)
-        s2 = st.text_area("🎬 Scene 2 (៥ វិនាទី)", value=st.session_state.scene2_prompt, height=100)
+        st.markdown("### English Video Prompts (Ready to Copy)")
+        s1 = st.text_area("🎬 Scene 1", value=st.session_state.scene1_prompt, height=100)
+        s2 = st.text_area("🎬 Scene 2", value=st.session_state.scene2_prompt, height=100)
         s34 = st.text_area("🔥 Scene 3 & 4", value=st.session_state.ai_response, height=200)
                 
-        full_export_text = f"--- OMNIREACT AI PROMPTS ---\nTimestamp Drop: {time_string}\n\n[Scene 1]\n{s1}\n\n[Scene 2]\n{s2}\n\n[Scene 3 & 4]\n{s34}\n"
+        full_export_text = f"--- MUSIC REACTION PROMPTS (ENGLISH) ---\nTimestamp Drop: {time_string}\n\n[Scene 1]\n{s1}\n\n[Scene 2]\n{s2}\n\n[Scene 3 & 4]\n{s34}\n"
         st.download_button(
-            label="📥 ទាញយក Prompts (.txt)",
+            label=t['download'],
             data=full_export_text,
-            file_name="omnireact_prompts.txt",
+            file_name="music_reaction_prompts.txt",
             mime="text/plain",
             use_container_width=True
         )
